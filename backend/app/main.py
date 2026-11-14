@@ -48,6 +48,8 @@ async def evaluate_request(request: FarmRequest, evaluation_id: str | None = Non
         rotations, rejected = rank_rotations(context, request.current_crop_id, request.is_irrigated, request.farmer_priority)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     if not rotations:
         raise HTTPException(status_code=422, detail="No safe three-year sequence passed the current hard filters. Review irrigation or local crop constraints.")
     identifier = evaluation_id or str(uuid4())

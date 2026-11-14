@@ -35,11 +35,15 @@ def suitability(crop: Crop, context: EnvironmentalContext, irrigated: bool) -> l
         rule="MINIMUM_GDD",
         reason=f"Seasonal heat accumulation is {context.annual_gdd:.0f} GDD; {crop.common_name} needs about {crop.minimum_gdd:.0f} in this reference set.",
     ))
-    ph_ok = crop.minimum_ph - .3 <= context.soil_ph <= crop.maximum_ph + .3
+    ph_ok = context.soil_ph is None or crop.minimum_ph - .3 <= context.soil_ph <= crop.maximum_ph + .3
     checks.append(Decision(
         passed=ph_ok,
         rule="SOIL_PH",
-        reason=f"Estimated pH {context.soil_ph:.1f} is {'within' if ph_ok else 'materially outside'} the configured {crop.minimum_ph:.1f}–{crop.maximum_ph:.1f} range.",
+        reason=(
+            "Soil pH is unavailable; crop pH suitability was not evaluated."
+            if context.soil_ph is None
+            else f"Estimated pH {context.soil_ph:.1f} is {'within' if ph_ok else 'materially outside'} the configured {crop.minimum_ph:.1f}–{crop.maximum_ph:.1f} range."
+        ),
     ))
     effective_water = context.seasonal_rainfall_mm * (1.25 if irrigated else 1)
     water_ok = irrigated or effective_water >= crop.minimum_water_mm * .68
@@ -83,22 +87,34 @@ def score_rotation(sequence: tuple[Crop, ...], context: EnvironmentalContext, ir
     climate_parts = [clamp(context.annual_gdd / crop.minimum_gdd) * clamp(1 - max(0, context.heat_stress_days - 8) / (70 if crop.max_temp_c >= 36 else 45)) for crop in sequence]
     climate = sum(climate_parts) / 3
 
-    texture_factor = {"SANDY": .82, "SANDY_LOAM": .90, "LOAM": 1.0, "CLAY_LOAM": .96, "CLAY": .88}.get(context.soil_texture, .90)
+    texture_factor = {"SANDY": .82, "SANDY_LOAM": .90, "LOAM": 1.0, "CLAY_LOAM": .96, "CLAY": .88}.get(context.soil_texture)
     anomaly_factor = clamp(1 + context.precipitation_anomaly_pct / 100)
     water_parts = []
     for crop in sequence:
         supply_ratio = context.seasonal_rainfall_mm / crop.minimum_water_mm
         irrigation_bonus = .16 if irrigated and supply_ratio < 1 else 0
-        water_parts.append(clamp(.48 * supply_ratio + .30 * crop.drought_tolerance + .12 * texture_factor + .10 * anomaly_factor + irrigation_bonus))
+        texture_score = .12 * texture_factor if texture_factor is not None else 0
+        weight_total = 1 if texture_factor is not None else .88
+        water_parts.append(clamp((.48 * supply_ratio + .30 * crop.drought_tolerance + .10 * anomaly_factor + texture_score + irrigation_bonus) / weight_total))
     water = sum(water_parts) / 3
 
     legume_credit = min(sum(c.nitrogen_credit_kg_ha for c in sequence) / 70, 1)
     removal = sum(c.nitrogen_removal_index for c in sequence) / 3
     residue = sum(c.residue_score for c in sequence) / 3
     root_diversity = len({c.root_depth for c in sequence}) / 3
-    ph_compat = sum(1 for c in sequence if c.minimum_ph <= context.soil_ph <= c.maximum_ph) / 3
-    organic_need = clamp((2.5 - context.soil_organic_matter_pct) / 2)
-    soil = clamp(.26 * legume_credit + .18 * (1 - removal) + .18 * residue + .16 * root_diversity + .14 * ph_compat + .08 * organic_need * (legume_credit + residue) / 2)
+    soil_components = [
+        (.26, legume_credit),
+        (.18, 1 - removal),
+        (.18, residue),
+        (.16, root_diversity),
+    ]
+    if context.soil_ph is not None:
+        ph_compat = sum(1 for c in sequence if c.minimum_ph <= context.soil_ph <= c.maximum_ph) / 3
+        soil_components.append((.14, ph_compat))
+    if context.soil_organic_matter_pct is not None:
+        organic_need = clamp((2.5 - context.soil_organic_matter_pct) / 2)
+        soil_components.append((.08, organic_need * (legume_credit + residue) / 2))
+    soil = clamp(sum(weight * value for weight, value in soil_components) / sum(weight for weight, _ in soil_components))
 
     unique_families = len({c.family for c in sequence}) / 3
     roots = len({c.root_depth for c in sequence}) / 3
@@ -123,7 +139,14 @@ def score_rotation(sequence: tuple[Crop, ...], context: EnvironmentalContext, ir
         sequence=[SequenceItem(year=i + 1, crop_id=c.crop_id, name=c.common_name) for i, c in enumerate(sequence)],
         scores=score,
         explanations=explanations[:3],
-        warnings=["Regional observations may not reflect field-level drainage, cultivar choice, pest pressure, or seed availability."],
+        warnings=[
+            "Regional observations may not reflect field-level drainage, cultivar choice, pest pressure, or seed availability.",
+            *(
+                ["Soil observations are unavailable for this location; soil-dependent suitability checks were not evaluated."]
+                if context.soil_ph is None or context.soil_organic_matter_pct is None
+                else []
+            ),
+        ],
         factors={
             "climate": [f"Seasonal GDD: {context.annual_gdd:.0f}", f"Heat-stress days: {context.heat_stress_days}"],
             "water": [f"Rainfall: {context.seasonal_rainfall_mm:.0f} mm", f"Anomaly: {context.precipitation_anomaly_pct:+.1f}%"],

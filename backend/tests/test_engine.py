@@ -30,6 +30,20 @@ def test_ph_filtering():
     assert any(not d.passed and d.rule == "SOIL_PH" for d in suitability(potato, context(soil_ph=8.2), True))
 
 
+def test_missing_soil_is_not_used_as_a_hard_suitability_filter():
+    potato = next(c for c in load_crops() if c.crop_id == "potato")
+    checks = suitability(potato, context(soil_texture=None, soil_ph=None, soil_organic_matter_pct=None), True)
+    ph_check = next(item for item in checks if item.rule == "SOIL_PH")
+    assert ph_check.passed
+    assert "not evaluated" in ph_check.reason
+    rotations, _ = rank_rotations(
+        context(soil_texture=None, soil_ph=None, soil_organic_matter_pct=None),
+        "maize", True, Priority.balanced,
+    )
+    assert rotations
+    assert any("Soil observations are unavailable" in warning for warning in rotations[0].warnings)
+
+
 def test_family_break_and_same_family_adjacency():
     by_id = {c.crop_id: c for c in load_crops()}
     result = family_break((by_id["sorghum"], by_id["cowpea"], by_id["sunflower"]), by_id["maize"])

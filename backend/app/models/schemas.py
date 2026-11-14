@@ -19,6 +19,7 @@ class DataStatus(str, Enum):
     ESTIMATED = "ESTIMATED"
     FALLBACK = "FALLBACK"
     UNAVAILABLE = "UNAVAILABLE"
+    USER_PROVIDED = "USER_PROVIDED"
 
 
 class FarmRequest(BaseModel):
@@ -67,9 +68,10 @@ class EnvironmentalContext(BaseModel):
     rainfall_status: str
     heat_stress_days: int
     soil_moisture_state: str
-    soil_texture: str
-    soil_ph: float
-    soil_organic_matter_pct: float
+    soil_texture: str | None = None
+    soil_ph: float | None = None
+    soil_organic_carbon_pct: float | None = None
+    soil_organic_matter_pct: float | None = None
     data_quality: dict[str, DataStatus]
 
 
