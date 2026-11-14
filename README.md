@@ -1,147 +1,477 @@
-# Field Shift: Adapting Farms with NASA Data
+<div align="center">
 
-Field Shift is a hackathon-ready decision-support application for agricultural extension workers and rainfed farmers. It compares deterministic, three-year crop rotations against regional climate evidence, estimated soil conditions, crop-family breaks, and an explicit multi-criteria scoring model. It does **not** predict yield and does not use an LLM to calculate recommendations.
+# 🌍 FieldShift
 
-## Architecture
+### Climate-Resilient Crop Rotation Planning with NASA Earth Observations
 
-~~~mermaid
-flowchart LR
-  U[Extension worker / farmer] --> N[Next.js frontend]
-  N --> F[FastAPI backend]
-  F --> P[NASA POWER adapter]
-  F --> S[ISRIC SoilGrids adapter]
-  F -. optional .-> M[SMAP adapter]
-  F --> C[Crop knowledge base]
-  F --> E[Hard filters + MCDA engine]
-  F --> D[(TTL cache / optional PostGIS)]
-  E --> F --> N
-~~~
+**NASA Space Apps Challenge 2026 | Field Shift: Adapting Farms with NASA Data**
 
-The frontend is a responsive Next.js/TypeScript planning workflow with five demo farms, clear loading stages, ranked and comparison views, a methodology dialog, and scenario sliders. The backend is a Python/FastAPI service with pure calculations, configurable JSON crop data, resilient HTTP adapters, deterministic ranking, and in-memory evaluation state for simulations.
+An explainable agricultural decision-support platform combining NASA Earth observations, soil information, and farmer priorities to explore climate-resilient crop rotation strategies.
 
-## Data sources and status
+**[GitHub Repository](https://github.com/harshbhagatzxcv-rgb/NASA-FieldShift)**
 
-- **NASA POWER**: daily T2M maximum/minimum, corrected precipitation, humidity, and solar radiation. Live requests use four recent complete years and a 180-day seasonal window.
-- **ISRIC SoilGrids**: 0–30 cm clay, sand, silt, pH, and soil organic carbon estimates.
-- **SMAP**: adapter boundary only. Root-zone moisture is marked UNAVAILABLE; the app never invents a live SMAP measurement.
-- **Demo fallback**: five regional tendency profiles. Fallback and estimated data are always visibly labelled.
+</div>
 
-Crop thresholds are configurable MVP reference parameters with notes. They must be calibrated with local agronomic expertise before operational use.
+---
 
-## Local setup
+## 🌱 Overview
 
-Requirements: Node.js 22+, Python 3.12+, and npm or pnpm.
+Farmers worldwide face increasingly unpredictable rainfall, rising temperatures, water shortages, extreme weather, and declining soil health.
 
-~~~bash
-cp .env.example .env
+**FieldShift** helps farmers explore alternative crop rotation strategies using regional environmental observations, soil-property estimates, and transparent agricultural decision rules.
 
+The platform aims to support:
+
+- Climate-resilient crop planning
+- Soil health improvement
+- Water conservation
+- Crop diversification
+- Agricultural decision-making under uncertainty
+
+FieldShift is designed to support farmer judgment, not replace local agricultural expertise.
+
+---
+
+## ✨ Key Features
+
+### 🌍 Location-Based Farm Analysis
+
+Farmers can select predefined demonstration farms or enter custom geographic coordinates.
+
+The application uses latitude and longitude to request regional environmental information.
+
+Custom-location analysis depends on the availability of external environmental datasets.
+
+### 🛰️ NASA Climate Integration
+
+FieldShift integrates NASA POWER climate observations.
+
+Requested environmental variables include:
+
+- Maximum temperature (`T2M_MAX`)
+- Minimum temperature (`T2M_MIN`)
+- Precipitation (`PRECTOTCORR`)
+- Relative humidity (`RH2M`)
+- Solar radiation (`ALLSKY_SFC_SW_DWN`)
+
+The backend derives climate indicators including:
+
+- Seasonal rainfall estimates
+- Rainfall anomalies
+- Growing degree days
+- Heat-stress days
+
+### 🌾 Crop Rotation Recommendations
+
+The application evaluates three-year crop rotation strategies using a deterministic, explainable recommendation engine.
+
+Factors considered include:
+
+- Climate suitability
+- Water requirements
+- Soil compatibility
+- Crop-family diversity
+- Root characteristics
+- Farmer priorities
+
+Recommendations include comparative scores, explanations, and warnings.
+
+**Important:** Scores are comparative planning indicators, not predictions of agricultural yield.
+
+### 💧 Climate Scenario Simulation
+
+Farmers can explore hypothetical environmental changes by adjusting:
+
+- Rainfall
+- Temperature
+- Irrigation availability
+
+The application recalculates crop rotation suitability under the selected scenario.
+
+### 📊 Transparent Data Provenance
+
+FieldShift distinguishes environmental information using the following statuses:
+
+| Status | Meaning |
+|---|---|
+| LIVE | Successfully retrieved and validated external data |
+| CACHED | Previously retrieved data reused |
+| ESTIMATED | Model-derived or estimated information |
+| FALLBACK | Substitute information used when primary data is unavailable |
+| UNAVAILABLE | Reliable information could not be retrieved |
+
+These labels help users distinguish real observations from estimates and demonstration values.
+
+---
+
+## 🛠️ Technology Stack
+
+| Component | Technology |
+|---|---|
+| Frontend | React, Next.js 16 |
+| Programming Language | TypeScript |
+| Backend | Python, FastAPI |
+| Climate Data | NASA POWER |
+| Soil Data | ISRIC SoilGrids |
+| Soil Moisture | NASA SMAP — integration pending |
+| API Communication | REST / JSON |
+| Version Control | Git and GitHub |
+
+---
+
+## 📁 Project Structure
+
+```text
+NASA-FieldShift/
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── lib/
+│   ├── public/
+│   ├── package.json
+│   └── package-lock.json
+│
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   ├── core/
+│   │   ├── data/
+│   │   ├── models/
+│   │   ├── services/
+│   │   └── main.py
+│   ├── tests/
+│   └── requirements.txt
+│
+├── docker-compose.yml
+├── .env.example
+└── README.md
+```
+
+---
+
+## ⚙️ Getting Started
+
+### Prerequisites
+
+Install the following:
+
+- Git
+- Node.js and npm
+- Python 3.10 or later
+- VS Code or another code editor
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/harshbhagatzxcv-rgb/NASA-FieldShift.git
+cd NASA-FieldShift
+```
+
+### 2. Set Up the Backend
+
+Open a PowerShell terminal:
+
+```powershell
 cd backend
-python3.12 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-~~~
+python -m venv .venv
+```
 
-In another terminal:
+Install dependencies:
 
-~~~bash
+```powershell
+& ".\.venv\Scripts\python.exe" -m pip install -r requirements.txt
+```
+
+Enable live environmental data requests:
+
+```powershell
+$env:DEMO_MODE="false"
+```
+
+Start FastAPI:
+
+```powershell
+& ".\.venv\Scripts\python.exe" -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Backend API:
+
+http://localhost:8000
+
+Interactive API documentation:
+
+http://localhost:8000/docs
+
+### 3. Set Up the Frontend
+
+Open a second PowerShell terminal from the project root:
+
+```powershell
 cd frontend
 npm ci
+```
+
+Configure the backend URL:
+
+```powershell
+Set-Content .env.local "NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000"
+```
+
+Start the development server:
+
+```powershell
 npm run dev
-~~~
+```
 
-Open http://localhost:3000. The frontend automatically activates its labelled demonstration fallback if the backend cannot be reached.
+Open:
 
-For containers:
+http://localhost:3000
 
-~~~bash
-docker compose up --build
-~~~
+Keep both frontend and backend terminals running.
 
-## Environment variables
+---
 
-| Variable | Purpose | Default |
-| --- | --- | --- |
-| NEXT_PUBLIC_API_BASE_URL | Browser-visible FastAPI base URL | http://localhost:8000 |
-| NEXT_PUBLIC_MAPBOX_TOKEN | Reserved for an optional Mapbox implementation | blank |
-| DATABASE_URL | Reserved for PostgreSQL/PostGIS persistence | blank; bundled JSON/in-memory fallback |
-| NASA_EARTHDATA_TOKEN | Reserved for an authenticated SMAP adapter | blank |
-| DEMO_MODE | Skip external requests and use explicit demo estimates | true |
-| CORS_ORIGINS | Comma-separated allowed frontend origins | http://localhost:3000 |
+## 🔌 Backend API Endpoints
 
-No private credential is required for the demo. Never commit real values.
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/v1/health` | Backend health check |
+| GET | `/api/v1/crops` | Retrieve crop information |
+| GET | `/api/v1/demo-profiles` | Retrieve demonstration farm profiles |
+| POST | `/api/v1/farms/evaluate` | Evaluate crop rotation strategies |
+| POST | `/api/v1/farms/simulate` | Simulate climate scenarios |
 
-## API
+API documentation is available through FastAPI Swagger UI.
 
-- GET /api/v1/health — service health and deterministic-engine status.
-- GET /api/v1/crops — all 15 crop reference records.
-- GET /api/v1/demo-profiles — selectable demo farm metadata.
-- POST /api/v1/farms/evaluate — validate a farm, build environmental context, filter candidates, and return the top three materially different rotations.
-- POST /api/v1/farms/simulate — re-run an evaluation with rainfall (-40% to +20%), warming (0°C to +4°C), and irrigation changes.
+---
 
-Interactive OpenAPI documentation is available at http://localhost:8000/docs.
+## 🛰️ Environmental Data Sources
 
-## Deterministic methodology
+### NASA POWER
 
-1. Climate and soil adapters return live, cached, estimated, unavailable, or fallback status.
-2. Hard filters remove crops that fail minimum seasonal GDD, material pH tolerance, critical rainfed water, irrigation dependence, extreme repeated heat, or crop-family break rules.
-3. Candidate three-year permutations prohibit adjacent/repeated families inside configured break intervals.
-4. Each viable sequence receives normalized climate, water, soil, and diversity scores in [0, 1].
-5. Preset MCDA weights produce an overall score displayed as 0–100.
+**Website:** https://power.larc.nasa.gov/
 
-~~~text
-overall = climate_weight × climate_score
-        + water_weight × water_score
-        + soil_weight × soil_score
-        + diversity_weight × diversity_score
-~~~
+NASA POWER provides regional climate observations used to calculate temperature, rainfall, and heat-related indicators.
 
-Water scoring combines normalized rainfall fit, anomaly, irrigation, drought tolerance, and texture factors; it never adds volumetric soil moisture directly to rainfall millimetres. Stable tie-breaking makes rankings reproducible.
+Live retrieval has been demonstrated during development.
 
-## Demo profiles
+### ISRIC SoilGrids
 
-Choose a profile in the first step and continue through conditions, goal, and review:
+**Website:** https://soilgrids.org/
 
-1. Semi-Arid Sahel, Senegal
-2. Iowa Corn Belt, USA
-3. Punjab / Indus Basin, Pakistan
-4. Andean smallholder, Peru
-5. Western Australian Wheat Belt
+SoilGrids provides modeled soil-property estimates, including:
 
-Profiles store regional tendencies, not fixed winners. In demo mode, both the API and browser fallback label output as demonstration or estimated data.
+- Soil texture
+- Soil pH
+- Soil organic carbon
+- Clay and sand fractions
 
-## Tests and checks
+The REST API has experienced HTTP 503 errors during development.
 
-~~~bash
-cd backend
-pytest -q
+An alternative Web Coverage Service (WCS) adapter is being developed and validated.
 
-cd ../frontend
-npm run lint
+SoilGrids estimates are not substitutes for laboratory soil tests.
+
+### NASA SMAP
+
+**Website:** https://smap.jpl.nasa.gov/
+
+NASA SMAP provides satellite-based soil-moisture information.
+
+The planned integration may require NASA Earthdata authentication.
+
+SMAP observations are not yet fully integrated into FieldShift.
+
+---
+
+## 🧪 Testing
+
+### Backend Tests
+
+From the backend directory:
+
+```powershell
+& ".\.venv\Scripts\python.exe" -m pytest
+```
+
+### Frontend TypeScript Validation
+
+From the frontend directory:
+
+```powershell
 npx tsc --noEmit
+```
+
+### Frontend Production Build
+
+```powershell
 npm run build
-~~~
+```
 
-The suite covers GDD, rainfall anomaly, weight normalization, pH and family filtering, water and score bounds, stable ranking, fallbacks, external timeouts, all five demos, and all required API workflows.
+These commands help verify the codebase but do not guarantee external API availability.
 
-## Deployment
+---
 
-- **Frontend**: import frontend/ into Vercel and set NEXT_PUBLIC_API_BASE_URL to the public API origin.
-- **Backend**: deploy backend/ as a Docker service on Render or Fly.io. Set DEMO_MODE=false, configure exact CORS_ORIGINS, and use /api/v1/health as the health check.
-- **Combined local demo**: use Docker Compose.
+## 🌦️ How FieldShift Works
 
-Logs contain evaluation IDs and profile labels, not farm secrets. External clients use bounded timeouts, schema checks, and exponential backoff.
+```text
+                  FARMER
+                    |
+                    v
+          Select Farm Location
+                    |
+                    v
+        Enter Agricultural Details
+                    |
+                    v
+          Environmental Analysis
+                    |
+          +---------+---------+
+          |                   |
+          v                   v
+      NASA POWER          SoilGrids
+          |                   |
+          +---------+---------+
+                    |
+                    v
+          Crop Suitability Rules
+                    |
+                    v
+          Rotation Optimization
+                    |
+                    v
+          Ranked Crop Strategies
+                    |
+                    v
+          Climate Scenario Testing
+                    |
+                    v
+        Explainable Recommendations
+```
 
-## Known limitations
+The system combines environmental information with configurable crop characteristics and farmer priorities.
 
-- A generic 180-day season is used until crop calendars are made location-aware.
-- SoilGrids and NASA POWER are regional estimates and may miss field-scale drainage or microclimate.
-- Simulation warms the existing seasonal context; it is not a future daily weather forecast.
-- Evaluation state and cache are process-local in the MVP. Configure PostgreSQL/PostGIS and a shared cache for multi-instance production.
-- Market prices, pest outbreaks, field boundaries, exact fertilizer prescriptions, and yield prediction are out of scope.
+It does not claim to predict exact yields or future weather.
 
-## Responsible use
+---
 
-> Field Shift provides comparative decision support based on regional satellite observations and configurable agronomic rules. Verify recommendations with local extension guidance, field observations, seed availability, and soil testing before planting.
+## ⚠️ Known Limitations
 
-The interface never claims guaranteed yield increases, exact future yields, exact fertilizer prescriptions, professional certification, or field-level precision from coarse observations.
+FieldShift is currently under active development.
+
+Known limitations include:
+
+- SoilGrids REST API availability may vary.
+- SoilGrids WCS integration requires further validation.
+- NASA SMAP integration is incomplete.
+- Demonstration profiles may use predefined environmental values.
+- Some custom locations may have unavailable environmental information.
+- Regional satellite observations may not represent individual field conditions.
+- Crop rotation scores are comparative indicators.
+- Local soil testing and agricultural expertise remain important.
+
+The application should not present fallback or demonstration information as live observations.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome.
+
+Team members should create separate development branches rather than modifying `main` directly.
+
+### Create a Branch
+
+```bash
+git switch -c feature/your-feature
+```
+
+### Commit Changes
+
+```bash
+git add .
+git commit -m "Describe your changes"
+```
+
+### Push Your Branch
+
+```bash
+git push -u origin feature/your-feature
+```
+
+Then open a Pull Request on GitHub.
+
+Team members without direct repository write access can fork the project and submit Pull Requests.
+
+---
+
+## 🔐 Security
+
+Never commit:
+
+- API keys
+- Access tokens
+- Passwords
+- NASA Earthdata credentials
+- `.env.local`
+- Python virtual environments
+- `node_modules`
+- Next.js build caches
+- Private keys
+
+Use environment variables for sensitive configuration.
+
+---
+
+## 🌎 NASA Space Apps Challenge 2026
+
+**Challenge:** Field Shift: Adapting Farms with NASA Data
+
+FieldShift explores how Earth observations, soil information, and explainable decision-support systems can help farmers evaluate crop rotation strategies under changing environmental conditions.
+
+The project emphasizes:
+
+- Environmental resilience
+- Soil health
+- Water conservation
+- Transparent scientific evidence
+- Farmer-centered decision-making
+
+---
+
+## 📚 Attribution
+
+This project builds upon the original FieldShift repository:
+
+**[Original FieldShift Repository](https://github.com/tejaswi-raghav/field-shift)**
+
+Original authorship, copyright notices, and applicable licensing conditions must be respected.
+
+NASA and ISRIC datasets remain subject to their respective data-use policies.
+
+---
+
+## 🚧 Project Status
+
+**Active Development**
+
+Current development priorities:
+
+1. Reliable custom-coordinate analysis
+2. Validated location-specific soil estimates
+3. NASA SMAP integration
+4. Improved crop rotation evaluation
+5. Automated testing
+6. Production deployment
+
+---
+
+<div align="center">
+
+### 🌱 FieldShift
+
+**Exploring climate-resilient farming through Earth observation data.**
+
+Built for NASA Space Apps Challenge 2026.
+
+</div>
